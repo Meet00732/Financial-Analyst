@@ -6,6 +6,7 @@ Parameters:
   KeyName:
     Description: "Name of an existing EC2 KeyPair to enable SSH access"
     Type: AWS::EC2::KeyPair::KeyName
+    Default: marketscope-ec2-key
 
   VPCId:
     Description: "VPC ID from Networking Stack"
