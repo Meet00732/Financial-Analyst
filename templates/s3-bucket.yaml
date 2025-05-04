@@ -4,7 +4,8 @@ Description: "S3 bucket for Financial data"
 Parameters:
   BucketNameParam:
     Type: AWS::SSM::Parameter::Value<String>
-    Description: "SSM parameter path for the MarketScope bucket name (e.g. /marketscope/BUCKET_NAME)"
+    Default: marketscope-BUCKET_NAME
+    Description: "SSM parameter path for the MarketScope bucket name"
 
 Resources:
   MarketScopeDataBucket:
