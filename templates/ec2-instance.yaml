@@ -181,7 +181,8 @@ Resources:
           yum install -y python3
 
           cd /home/ec2-user
-          git clone ${GitRepoURL} app
+          git clone --branch main --single-branch ${GitRepoURL} app
+          chown -R ec2-user:ec2-user app
           cd app
 
           # Upgrade pip and install required python packages
