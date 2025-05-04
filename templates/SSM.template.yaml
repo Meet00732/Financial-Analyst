@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Secrets Manager Template for Financial Analyst Credentials"
+
+Parameters:
+  EdgarToolsIdentity:
+    Type: String
+    Description: "Your EdgarTools identity (name+email)."
+
+  BucketName:
+    Type: String
+    Description: "The globally unique name for your S3 bucket"
+
+Resources:
+  EdgarIdentitySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: marketscope-EDGAR_IDENTITY
+      SecretString: !Ref EdgarToolsIdentity
+
+
+  StreamingBucketNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: marketscope-BUCKET_NAME
+      Description: "S3 bucket name for MarketScope data"
+      Type: String
+      Value: !Ref BucketName
+
+Outputs:
+  EdgarIdentitySecret:
+    Description: "Your EdgarTools identity (name+email)."
+    Value: marketscope-EDGAR_IDENTITY
+
+  StreamingBucketNameOutput:
+    Description: "SSM Parameter path for the S3 bucket name"
+    Value: marketscope-BUCKET_NAME

@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "S3 bucket for Financial data"
+
+Parameters:
+  BucketNameParam:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: "SSM parameter path for the MarketScope bucket name (e.g. /marketscope/BUCKET_NAME)"
+
+Resources:
+  MarketScopeDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketNameParam
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOneYear
+            Status: Enabled
+            ExpirationInDays: 365
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls:       true
+        IgnorePublicAcls:      true
+        BlockPublicPolicy:     true
+        RestrictPublicBuckets: true
+
+Outputs:
+  BucketName:
+    Description: "The name of the S3 bucket"
+    Value: !Ref MarketScopeDataBucket
+    Export:
+      Name: marketscope-BucketName

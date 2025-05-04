@@ -1,0 +1,308 @@
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: dockerfile
+  # image: apache/airflow:2.7.1
+  platform: linux/amd64
+  environment:
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${AIRFLOW_DATABASE_PASSWORD:-airflow}@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:${AIRFLOW_DATABASE_PASSWORD:-airflow}@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:${REDIS_PASSWORD:-redispass}@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-osf9_VPRt2CRJqfytLcbpsKi1idYhkFyTZN-kY-4V3Q=}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - airflow_logs:/opt/airflow/logs
+    - airflow_plugins:/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-0}"
+  restart: always
+
+services:
+  # zookeeper:
+  #   image: confluentinc/cp-zookeeper:7.4.0
+  #   hostname: zookeeper
+  #   container_name: zookeeper
+  #   ports:
+  #     - "2181:2181"
+  #   environment:
+  #     ZOOKEEPER_CLIENT_PORT: 2181
+  #     ZOOKEEPER_TICK_TIME: 2000
+  #     KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=ruok,srvr"
+  #   healthcheck:
+  #     test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - airflow-network
+
+
+  # broker:
+  #   image: confluentinc/cp-server:7.4.0
+  #   hostname: broker
+  #   container_name: broker
+  #   depends_on:
+  #     zookeeper:
+  #       condition: service_healthy
+  #   ports:
+  #     - "9092:9092"
+  #     - "29092:29092"
+  #     - "9101:9101"
+  #   environment:
+  #     KAFKA_BROKER_ID: 1
+  #     KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  #     KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+  #     # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_HOST://localhost:9092
+  #     # KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+  #     KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+  #     KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+  #     KAFKA_JMX_PORT: 9101
+  #     KAFKA_JMX_HOSTNAME: localhost
+  #     KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+  #     # CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+  #     # CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+  #     CONFLUENT_METRICS_ENABLE: 'false'
+  #     CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+  #   networks:
+  #     - airflow-network
+  #   healthcheck:
+  #     test: [ "CMD", "bash", "-c", 'nc -z localhost 9092' ]
+  #     interval: 50s
+  #     timeout: 10s
+  #     retries: 5
+
+
+  # schema-registry:
+  #   image: confluentinc/cp-schema-registry:7.4.0
+  #   hostname: schema-registry
+  #   container_name: schema-registry
+  #   depends_on:
+  #     broker:
+  #       condition: service_healthy
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     SCHEMA_REGISTRY_HOST_NAME: schema-registry
+  #     SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+  #     SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+  #   networks:
+  #     - airflow-network
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://localhost:8081/" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  
+  # control-center:
+  #   image: confluentinc/cp-enterprise-control-center:7.4.0
+  #   hostname: control-center
+  #   container_name: control-center
+  #   depends_on:
+  #     broker:
+  #       condition: service_healthy
+  #     schema-registry:
+  #       condition: service_healthy
+  #   ports:
+  #     - "9021:9021"
+  #   environment:
+  #     CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
+  #     CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+  #     CONTROL_CENTER_REPLICATION_FACTOR: 1
+  #     CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+  #     CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+  #     CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+  #     CONFLUENT_METRICS_ENABLE: 'false'
+  #     PORT: 9021
+  #   networks:
+  #     - airflow-network
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://localhost:9021/health" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: always
+    networks:
+      - airflow-network
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-redispass}"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redispass}", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always
+    networks:
+      - airflow-network
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command: >
+      -c "airflow db init &&
+          airflow users create --username ${AIRFLOW_ADMIN_USERNAME:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin} --firstname ${AIRFLOW_ADMIN_FIRSTNAME:-Admin} --lastname ${AIRFLOW_ADMIN_LASTNAME:-User} --role Admin --email ${AIRFLOW_ADMIN_EMAIL:-admin@example.com}"
+    depends_on:
+      - postgres
+    networks:
+      - airflow-network
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    depends_on:
+      - airflow-init
+    networks:
+      - airflow-network
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      - airflow-init
+    networks:
+      - airflow-network
+
+  airflow-worker:
+    <<: *airflow-common
+    container_name: airflow-worker
+    command: celery worker
+    depends_on:
+      - airflow-init
+    networks:
+      - airflow-network
+
+  flower:
+    <<: *airflow-common
+    container_name: airflow-flower
+    command: celery flower
+    ports:
+      - "5555:5555"
+    depends_on:
+      - airflow-init
+    networks:
+      - airflow-network
+
+  
+  # ############################################################################################################
+
+  # # SPARK MASTER - WORKER
+
+  # ############################################################################################################
+
+  # spark-master:
+  #   image: bitnami/spark:latest
+  #   container_name: spark-master
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_MASTER_HOST=spark-master
+  #     - SPARK_MASTER_PORT=7077
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   ports:
+  #     - "9090:8080"
+  #     - "7077:7077"
+  #   healthcheck:
+  #     test: ["CMD", "bash", "-c", "curl -f http://localhost:8080/ || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   networks:
+  #     - airflow-network
+
+    
+  # spark-worker:
+  #   image: bitnami/spark:latest
+  #   container_name: spark-worker
+  #   depends_on:
+  #     - spark-master
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark-master:7077
+  #     - SPARK_WORKER_CORES=2
+  #     - SPARK_WORKER_MEMORY=1g
+  #     - SPARK_RPC_AUTHENTICATION_ENABLED=no
+  #     - SPARK_RPC_ENCRYPTION_ENABLED=no
+  #     - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+  #     - SPARK_SSL_ENABLED=no
+  #   healthcheck:
+  #     test: ["CMD", "bash", "-c", "nc -z localhost 7077 || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   networks:
+  #     - airflow-network
+
+  # streamer:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.spark
+  #   container_name: reddit-streamer
+  #   depends_on:
+  #     - broker
+  #     - spark-master
+  #     - spark-worker
+  #   # depends_on:
+  #   #   broker:
+  #   #     condition: service_healthy
+  #   #   spark-master:
+  #   #     condition: service_healthy
+  #   #   spark-worker:
+  #   #     condition: service_healthy
+  #   # healthcheck:
+  #   #   disable: true
+
+  #   # restart: "on-failure:3"
+  #   restart: always
+  #   networks:
+  #     - airflow-network
+  #   command: ["python3", "pyspark_streaming.py"]
+
+
+networks:
+  airflow-network:
+    name: airflow-network
+
+volumes:
+  postgres_db:
+  airflow_logs:
+  airflow_plugins:
