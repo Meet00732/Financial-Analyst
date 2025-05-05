@@ -16,6 +16,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
   volumes:
     - ./dags:/opt/airflow/dags
+    - ./ingestion:/opt/airflow/ingestion
     - airflow_logs:/opt/airflow/logs
     - airflow_plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-0}"
