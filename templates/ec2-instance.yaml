@@ -128,6 +128,16 @@ Resources:
                       - !ImportValue marketscope-BucketName
                       - "/*"
 
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/marketscope-BUCKET_NAME
+
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
