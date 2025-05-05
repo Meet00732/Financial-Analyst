@@ -9,7 +9,8 @@ import json
 import boto3
 import pandas as pd
 from botocore.exceptions import ClientError
-from utils.secrets_utils import get_secret
+from ingestion.edgar_ingestor.utils import *
+
 
 # Secret name in AWS Secrets Manager holding the S3 bucket name
 _BUCKET_SECRET_NAME = "marketscope-BUCKET_NAME"
