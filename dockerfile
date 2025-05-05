@@ -14,3 +14,5 @@ RUN chown -R airflow: /opt/airflow/dags \
 
 USER airflow
 RUN pip install --no-cache-dir -r /requirements.txt
+
+ENV PYTHONPATH="/opt/airflow:${PYTHONPATH}"

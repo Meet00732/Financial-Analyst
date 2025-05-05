@@ -14,6 +14,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-osf9_VPRt2CRJqfytLcbpsKi1idYhkFyTZN-kY-4V3Q=}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__PYTHONPATH: /opt/airflow
   volumes:
     - ./dags:/opt/airflow/dags
     - ./ingestion:/opt/airflow/ingestion
