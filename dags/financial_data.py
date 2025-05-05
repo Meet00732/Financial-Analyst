@@ -4,8 +4,11 @@ import json
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
-from ingestion.edgar_ingestor.fetch_filings import *
-from ingestion.edgar_ingestor.storage import *
+# from ingestion.edgar_ingestor.fetch_filings import *
+# from ingestion.edgar_ingestor.storage import *
+
+from ingestion.edgar_ingestor.fetch_filings import fetch_edgar_filings, fetch_market_data
+from ingestion.edgar_ingestor.storage import save_filings, save_market_data, save_combined
 
 default_args = {
     "owner": "meet",

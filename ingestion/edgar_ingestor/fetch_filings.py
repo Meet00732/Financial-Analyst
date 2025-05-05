@@ -18,8 +18,10 @@ from bs4 import BeautifulSoup
 import re
 # from utils import *
 # from storage import *
-from ingestion.edgar_ingestor.utils import *
-from ingestion.edgar_ingestor.storage import *
+# from ingestion.edgar_ingestor.utils import *
+# from ingestion.edgar_ingestor.storage import *
+
+from .utils import get_secret, get_sp500_tickers, extract_sections
 
 # === Configuration ===
 IDENTITY = get_secret("marketscope-EDGAR_IDENTITY")
